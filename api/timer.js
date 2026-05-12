@@ -1,65 +1,32 @@
-const { createCanvas } = require('canvas');
-const GIFEncoder = require('gifencoder');
-
-module.exports = async (req, res) => {
-  // duration in seconds, default 3600 (1 hour)
+module.exports = (req, res) => {
   const duration = parseInt(req.query.duration) || 3600;
+  const color = (req.query.color || 'fd7e14').replace('#', '');
   
-  // color customization
-  const bgColor = '#' + (req.query.bg || 'ffffff');
-  const textColor = '#' + (req.query.color || 'fd7e14');
-  const fontSize = parseInt(req.query.size) || 60;
+  const r = parseInt(color.substring(0,2), 16);
+  const g = parseInt(color.substring(2,4), 16);
+  const b = parseInt(color.substring(4,6), 16);
 
-  const width = 400;
-  const height = 140;
-  const frames = 60; // 60 seconds of animation then loops
+  const h = Math.floor(duration / 3600);
+  const m = Math.floor((duration % 3600) / 60);
+  const s = duration % 60;
 
-  const encoder = new GIFEncoder(width, height);
-  const chunks = [];
+  const pad = n => String(n).padStart(2, '0');
+  const timeStr = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
-  encoder.createReadStream().on('data', chunk => chunks.push(chunk));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="140">
+    <rect width="400" height="140" fill="white" rx="8"/>
+    <text x="200" y="75" font-family="Arial" font-size="64" font-weight="bold" 
+      fill="rgb(${r},${g},${b})" text-anchor="middle" dominant-baseline="middle"
+      letter-spacing="4">${timeStr}</text>
+    <text x="88" y="115" font-family="Arial" font-size="13" 
+      fill="rgb(${r},${g},${b})" text-anchor="middle">HOURS</text>
+    <text x="200" y="115" font-family="Arial" font-size="13" 
+      fill="rgb(${r},${g},${b})" text-anchor="middle">MINUTES</text>
+    <text x="312" y="115" font-family="Arial" font-size="13" 
+      fill="rgb(${r},${g},${b})" text-anchor="middle">SECONDS</text>
+  </svg>`;
 
-  encoder.start();
-  encoder.setRepeat(0);
-  encoder.setDelay(1000);
-  encoder.setQuality(10);
-
-  const canvas = createCanvas(width, height);
-  const ctx = canvas.getContext('2d');
-
-  for (let i = 0; i < frames; i++) {
-    let remaining = Math.max(0, duration - i);
-    const h = Math.floor(remaining / 3600);
-    const m = Math.floor((remaining % 3600) / 60);
-    const s = remaining % 60;
-
-    // Background
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, width, height);
-
-    // Timer digits
-    ctx.fillStyle = textColor;
-    ctx.font = `bold ${fontSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const timeStr = `${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : ${String(s).padStart(2,'0')}`;
-    ctx.fillText(timeStr, width / 2, height / 2 - 10);
-
-    // Labels
-    ctx.font = '13px Arial';
-    ctx.fillText('HOURS              MINUTES              SECONDS', width / 2, height / 2 + 40);
-
-    encoder.addFrame(ctx);
-  }
-
-  encoder.finish();
-
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  const gif = Buffer.concat(chunks);
-  res.setHeader('Content-Type', 'image/gif');
+  res.setHeader('Content-Type', 'image/svg+xml');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.send(gif);
+  res.send(svg);
 };
