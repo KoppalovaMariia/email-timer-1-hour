@@ -1,6 +1,7 @@
 {
   "name": "email-timer",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "@vercel/og": "^0.6.2"
   }
