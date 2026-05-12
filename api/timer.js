@@ -1,6 +1,6 @@
-const { ImageResponse } = require('@vercel/og');
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
+  const { ImageResponse } = await import('@vercel/og');
+  
   const duration = parseInt(req.query.duration) || 3600;
   const color = '#' + (req.query.color || 'fd7e14').replace('#', '');
 
@@ -49,4 +49,4 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'image/png');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.send(Buffer.from(arrayBuffer));
-};
+}
